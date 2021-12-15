@@ -1,7 +1,14 @@
-﻿namespace Training.Application.Books
+﻿using System.Collections.Generic;
+using Training.Core.Models;
+
+namespace Training.Application.Books
 {
-    interface IBookService
+    public interface IBookService
     {
-        System.Collections.Generic.IEnumerable<Book> Get();
+        IEnumerable<Book> Get();
+        Book Get(int id);
+        void Create(Book book);
+        void Update(Book book);
+        void Delete(int id);
     }
 }
