@@ -56,6 +56,9 @@ namespace Training.WebAPI
             app.UseRouting();
             app.UseAuthorization();
 
+            app.UseMiddleware<RequestCultureMiddleware>();
+
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
