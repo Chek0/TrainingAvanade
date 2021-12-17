@@ -1,20 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Training.Application.Base;
 using Training.Core.Models;
 using Training.Core.Repositories;
 
 namespace Training.Application.Reservations
 {
-    public class ReservationService : IReservationService
+    public class ReservationService : ServiceBase, IReservationService
     {
 
         private readonly IReservationRepository _reservationRepository;
-        
+        private readonly IBookRepository _bookRepository;
+        private readonly IUserRepository _userRepository;
 
-        public ReservationService(IReservationRepository reservationRepository)
+
+        public ReservationService(IUnitOfWork unitOfWork)
+            : base(unitOfWork)
         {
-            _reservationRepository = reservationRepository;
+            _reservationRepository = unitOfWork.ReservationRepository;
+            _bookRepository = unitOfWork.BookRepository;
+            _userRepository = unitOfWork.UserRepository;
         }
 
         public IEnumerable<ReservationDto> Get(Guid userId)
@@ -26,9 +32,14 @@ namespace Training.Application.Reservations
 
         public void Create(ReservationDto reservationDto)
         {
-            var reservation = MapDto(reservationDto);
+            var book = _bookRepository.Get(reservationDto.BookISBN);
+            var user = _userRepository.Get(reservationDto.UserIdentifier);
+            var reservation = MapDto(reservationDto, book, user);
+
+            reservation.Id = Guid.NewGuid();
 
             _reservationRepository.Create(reservation);
+            _unitOfWork.CommitTransaction();
         }
 
         public void Update(ReservationUpdateDto reservationUpdateDto)
@@ -38,6 +49,7 @@ namespace Training.Application.Reservations
             reservation.ExpectedDeliveryDate = reservationUpdateDto.NewExpectedDeliveryDate;
 
             _reservationRepository.Update(reservation);
+            _unitOfWork.CommitTransaction();
         }
 
         public void Delete(Guid id)
@@ -47,6 +59,7 @@ namespace Training.Application.Reservations
             reservation.IsDeleted = true;
 
             _reservationRepository.Update(reservation);
+            _unitOfWork.CommitTransaction();
         }
 
 
@@ -55,22 +68,22 @@ namespace Training.Application.Reservations
             return new ReservationDto
             {
                 Id = entity.Id,
-                UserId = entity.UserId,
-                BookId = entity.BookId,
+                UserIdentifier = entity.User.NationalIdentifier,
+                BookISBN = entity.Book.ISBN,
                 CreationDate = entity.CreationDate,
                 ExpectedDeliveryDate = entity.ExpectedDeliveryDate,
             };
         }
 
-        private Reservation MapDto(ReservationDto entity)
+        private Reservation MapDto(ReservationDto dto, Book book, User user)
         {
             return new Reservation
             {
-                Id = entity.Id,
-                UserId = entity.UserId,
-                BookId = entity.BookId,
-                CreationDate = entity.CreationDate,
-                ExpectedDeliveryDate = entity.ExpectedDeliveryDate,
+                Id = dto.Id,
+                User = user,
+                Book = book,
+                CreationDate = dto.CreationDate,
+                ExpectedDeliveryDate = dto.ExpectedDeliveryDate,
             };
         }
 
